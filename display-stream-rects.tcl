@@ -1,12 +1,14 @@
 package require Tk
-text .t -yscrollcommand ".scroll set" -setgrid true \
-        -width 40 -height 10 -wrap word
+text .t -yscrollcommand ".scroll set" -wrap none
 scrollbar .scroll -command ".t yview"
 pack .scroll -side right -fill y
 pack .t -expand yes -fill both
+wm geometry . "800x[expr {[winfo screenheight .]/2 - 50}]+0-50"
 
-proc handleDisplayStreamUpdate {args} {
+proc handleDisplayStreamUpdate {width height args} {
+    wm title . "Stream for ${width}x${height}"
     .t insert end "$args\n"
+    .t yview moveto 1
 }
 
 source "lib/c.tcl"
@@ -46,7 +48,7 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
         const CGRect *dirtyRects = CGDisplayStreamUpdateGetRects(updateRef, kCGDisplayStreamUpdateDirtyRects, &dirtyRectsCount);
 
         char *s = calloc(10000, 1);
-        int si = snprintf(s, 10000, "handleDisplayStreamUpdate");
+        int si = snprintf(s, 10000, "handleDisplayStreamUpdate %f %f", width, height);
 
         for (size_t i = 0; i < dirtyRectsCount; i++) {
             const CGRect rect = dirtyRects[i];
