@@ -5,8 +5,8 @@ scrollbar .scroll -command ".t yview"
 pack .scroll -side right -fill y
 pack .t -expand yes -fill both
 
-proc handleDisplayStreamUpdate {} {
-    .t insert end "HI\n"
+proc handleDisplayStreamUpdate {args} {
+    .t insert end "$args\n"
 }
 
 source "lib/c.tcl"
@@ -33,26 +33,34 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
 //    NSLog(@"stream bounds %fx%f", width, height);
 //    __block int dispatchNumber = 0;
     CGDisplayStreamRef stream = CGDisplayStreamCreateWithDispatchQueue(CGMainDisplayID(),
-                                           width,
-                                           height,
-                                           'BGRA',
-                                           properties, // TODO: should cursor show?
-                                           dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
-                                           ^(CGDisplayStreamFrameStatus status,
-                                             uint64_t displayTime,
-                                             IOSurfaceRef  _Nullable frameSurface,
-                                             CGDisplayStreamUpdateRef  _Nullable updateRef) {
+                                                                       width,
+                                                                       height,
+                                                                       'BGRA',
+                                                                       properties, // TODO: should cursor show?
+                                                                       dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+                                                                       ^(CGDisplayStreamFrameStatus status,
+                                                                         uint64_t displayTime,
+                                                                         IOSurfaceRef  _Nullable frameSurface,
+                                                                         CGDisplayStreamUpdateRef  _Nullable updateRef) {
         size_t dirtyRectsCount;
         const CGRect *dirtyRects = CGDisplayStreamUpdateGetRects(updateRef, kCGDisplayStreamUpdateDirtyRects, &dirtyRectsCount);
+
+        char *s = calloc(10000, 1);
+        int si = snprintf(s, 10000, "handleDisplayStreamUpdate");
+
         for (size_t i = 0; i < dirtyRectsCount; i++) {
             const CGRect rect = dirtyRects[i];
             if (!(rect.size.width > width - 4 && rect.size.height > height - 4)) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                        Tcl_Eval(interp, "handleDisplayStreamUpdate");
-                    });
                 // [dirtyRectsArr addObject:[NSValue valueWithRect:rect]];
+                si += snprintf(s + si, 10000 - si,
+                               " {%f %f %f %f}",
+                               rect.origin.x, rect.origin.y,
+                               rect.size.width, rect.size.height);
             }
         }
+        dispatch_async(dispatch_get_main_queue(), ^{
+                Tcl_Eval(interp, s);
+            });
     });
     CGDisplayStreamStart(stream);
 }
