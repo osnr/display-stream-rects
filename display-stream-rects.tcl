@@ -46,13 +46,11 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
 
         for (size_t i = 0; i < dirtyRectsCount; i++) {
             const CGRect rect = dirtyRects[i];
-            if (!(rect.size.width > width - 4 && rect.size.height > height - 4)) {
-                si += snprintf(s + si, 10000 - si,
-                               " {%f %f %f %f}",
-                               rect.origin.x, rect.origin.y,
-                               rect.origin.x + rect.size.width,
-                               rect.origin.y + rect.size.height);
-            }
+            si += snprintf(s + si, 10000 - si,
+                           " {%f %f %f %f}",
+                           rect.origin.x, rect.origin.y,
+                           rect.origin.x + rect.size.width,
+                           rect.origin.y + rect.size.height);
         }
         dispatch_async(dispatch_get_main_queue(), ^{ Tcl_Eval(interp, s); });
     });
