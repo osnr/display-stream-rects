@@ -52,7 +52,10 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
                            rect.origin.x + rect.size.width,
                            rect.origin.y + rect.size.height);
         }
-        dispatch_async(dispatch_get_main_queue(), ^{ Tcl_Eval(interp, s); });
+        dispatch_async(dispatch_get_main_queue(), ^{
+            Tcl_Eval(interp, s);
+            free(s);
+        });
     });
     CGDisplayStreamStart(stream);
 }
