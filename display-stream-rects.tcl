@@ -41,8 +41,8 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
         const CGRect *dirtyRects = CGDisplayStreamUpdateGetRects(updateRef, kCGDisplayStreamUpdateDirtyRects, &dirtyRectsCount);
 
         char *s = calloc(10000, 1);
-        int si = snprintf(s, 10000, "handleDisplayStreamUpdate %d %f %f",
-                          sequenceNumber, width, height);
+        int si = snprintf(s, 10000, "handleDisplayStreamUpdate %d",
+                          sequenceNumber);
 
         for (size_t i = 0; i < dirtyRectsCount; i++) {
             const CGRect rect = dirtyRects[i];
@@ -50,7 +50,8 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
                 si += snprintf(s + si, 10000 - si,
                                " {%f %f %f %f}",
                                rect.origin.x, rect.origin.y,
-                               rect.size.width, rect.size.height);
+                               rect.origin.x + rect.size.width,
+                               rect.origin.y + rect.size.height);
             }
         }
         dispatch_async(dispatch_get_main_queue(), ^{ Tcl_Eval(interp, s); });
@@ -80,5 +81,15 @@ proc handleDisplayStreamUpdate {seq args} {
     # .t window create end -window .$l
 
     .t yview moveto 1
+
+    .boxes.can delete all
+    foreach rect $args {
+        set rect [lmap v $rect {expr {$v/2}}]
+        .boxes.can create rect {*}$rect -outline #fb0
+    }
 }
 
+toplevel .boxes
+canvas .boxes.can -width [expr {int($::width/2)}] -height [expr {int($::height/2)}]
+pack .boxes.can
+wm geometry .boxes "-50-50"
