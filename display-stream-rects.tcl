@@ -1,11 +1,22 @@
+package require Tk
+text .t -yscrollcommand ".scroll set" -setgrid true \
+        -width 40 -height 10 -wrap word
+scrollbar .scroll -command ".t yview"
+pack .scroll -side right -fill y
+pack .t -expand yes -fill both
+
+proc handleDisplayStreamUpdate {} {
+    .t insert end "HI\n"
+}
+
 source "lib/c.tcl"
 
 set cc [c create]
 $cc include <CoreGraphics/CoreGraphics.h>
-$cc proc startDisplayStream {} void {
+$cc proc startDisplayStream {Tcl_Interp* interp} void {
     CGRect displayBounds = CGDisplayBounds(CGMainDisplayID());
     CGFloat width = displayBounds.size.width;
-    CGFloat height = displayBounds.size.height / 2.0;
+    CGFloat height = displayBounds.size.height / 2.0; // half-height (top half of screen)
 
     const void *keys[] = {
         kCGDisplayStreamSourceRect,
@@ -20,7 +31,6 @@ $cc proc startDisplayStream {} void {
 //        (NSString *) kCGDisplayStreamMinimumFrameTime: @0.1
 
 //    NSLog(@"stream bounds %fx%f", width, height);
-//    dispatch_queue_t queue = dispatch_queue_create("Screen Matching", NULL);
 //    __block int dispatchNumber = 0;
     CGDisplayStreamRef stream = CGDisplayStreamCreateWithDispatchQueue(CGMainDisplayID(),
                                            width,
@@ -37,7 +47,9 @@ $cc proc startDisplayStream {} void {
         for (size_t i = 0; i < dirtyRectsCount; i++) {
             const CGRect rect = dirtyRects[i];
             if (!(rect.size.width > width - 4 && rect.size.height > height - 4)) {
-                printf("hello\n");
+                dispatch_async(dispatch_get_main_queue(), ^{
+                        Tcl_Eval(interp, "handleDisplayStreamUpdate");
+                    });
                 // [dirtyRectsArr addObject:[NSValue valueWithRect:rect]];
             }
         }
@@ -48,5 +60,3 @@ $cc cflags -framework CoreGraphics -framework CoreFoundation
 $cc compile
 
 startDisplayStream
-
-package require Tk
