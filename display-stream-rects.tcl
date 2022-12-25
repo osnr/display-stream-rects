@@ -1,16 +1,3 @@
-package require Tk
-text .t -yscrollcommand ".scroll set" -wrap none
-scrollbar .scroll -command ".t yview"
-pack .scroll -side right -fill y
-pack .t -expand yes -fill both
-wm geometry . "800x[expr {[winfo screenheight .]/2 - 100}]+0-50"
-
-proc handleDisplayStreamUpdate {seq width height args} {
-    wm title . "Stream with bounds ${width}x${height}, update number $seq"
-    .t insert end "$seq $args\n"
-    .t yview moveto 1
-}
-
 source "lib/c.tcl"
 
 set cc [c create]
@@ -19,6 +6,10 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
     CGRect displayBounds = CGDisplayBounds(CGMainDisplayID());
     CGFloat width = displayBounds.size.width;
     CGFloat height = displayBounds.size.height / 2.0; // half-height (top half of screen)
+
+    char setter[1000];
+    snprintf(setter, sizeof(setter), "set ::width %f; set ::height %f", width, height);
+    Tcl_Eval(interp, setter);
 
     const void *keys[] = {
         kCGDisplayStreamSourceRect,
@@ -56,7 +47,6 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
         for (size_t i = 0; i < dirtyRectsCount; i++) {
             const CGRect rect = dirtyRects[i];
             if (!(rect.size.width > width - 4 && rect.size.height > height - 4)) {
-                // [dirtyRectsArr addObject:[NSValue valueWithRect:rect]];
                 si += snprintf(s + si, 10000 - si,
                                " {%f %f %f %f}",
                                rect.origin.x, rect.origin.y,
@@ -71,3 +61,24 @@ $cc cflags -framework CoreGraphics -framework CoreFoundation
 $cc compile
 
 startDisplayStream
+
+package require Tk
+text .t -yscrollcommand ".scroll set" -wrap none
+scrollbar .scroll -command ".t yview"
+pack .scroll -side right -fill y
+pack .t -expand yes -fill both
+wm geometry . "800x[expr {[winfo screenheight .]/2 - 200}]+0-50"
+
+proc handleDisplayStreamUpdate {seq args} {
+    wm title . "Stream with bounds ${::width}x${::height}, update number $seq"
+
+    .t insert end "$seq $args\n"
+
+    # set image [image create photo -file $imagepath]
+    # set l "l[incr ::i]"
+    # label .$l -image $image
+    # .t window create end -window .$l
+
+    .t yview moveto 1
+}
+
