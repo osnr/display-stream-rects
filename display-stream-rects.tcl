@@ -23,7 +23,7 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
 
 //        (NSString *) kCGDisplayStreamMinimumFrameTime: @0.1
 
-    __block int nextSequenceNumber = 0;
+    __block int lastSequenceNumber = 0;
     CGDisplayStreamRef stream = CGDisplayStreamCreateWithDispatchQueue(
             CGMainDisplayID(),
             width, height,
@@ -35,7 +35,7 @@ $cc proc startDisplayStream {Tcl_Interp* interp} void {
               IOSurfaceRef  _Nullable frameSurface,
               CGDisplayStreamUpdateRef  _Nullable updateRef) {
 
-        __block int sequenceNumber = nextSequenceNumber++;
+        const int sequenceNumber = ++lastSequenceNumber;
 
         size_t dirtyRectsCount;
         const CGRect *dirtyRects = CGDisplayStreamUpdateGetRects(updateRef, kCGDisplayStreamUpdateDirtyRects, &dirtyRectsCount);
